@@ -233,10 +233,12 @@ bd info --schema --json                                # Get schema, tables, con
 
 # Workflow: AI agents should inspect first, then migrate
 # 1. Run --inspect to see pending migrations and warnings
-# 2. Check for missing_config (like issue_prefix)
+# 2. Check for missing_config (like issue-prefix in config.yaml)
 # 3. Review invariants_to_check for safety guarantees
 # 4. If warnings exist, fix config issues first
 # 5. Then run bd migrate safely
+
+**Note (v0.22+)**: `issue-prefix` is now stored in `.beads/config.yaml` (single source of truth), not in the database. Automatic migration runs on first command after upgrade.
 ```
 
 **Migration safety:** The system verifies data integrity invariants after migrations:

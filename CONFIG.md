@@ -165,10 +165,12 @@ Configuration keys use dot-notation namespaces to organize settings:
 ### Core Namespaces
 
 - `compact_*` - Compaction settings (see EXTENDING.md)
-- `issue_prefix` - Issue ID prefix (managed by `bd init`)
+- `issue-prefix` - Issue ID prefix (stored in `config.yaml`, set by `bd init`)
 - `max_collision_prob` - Maximum collision probability for adaptive hash IDs (default: 0.25)
 - `min_hash_length` - Minimum hash ID length (default: 4)
 - `max_hash_length` - Maximum hash ID length (default: 8)
+
+**Note**: As of v0.22, `issue-prefix` is stored exclusively in `config.yaml` (the single source of truth). Pre-0.22 versions stored it in the database's `config` table. Migration is automatic on first command after upgrade.
 
 ### Integration Namespaces
 
@@ -298,7 +300,8 @@ jira_project = get_config("jira.project")
 Some bd commands automatically use configuration:
 
 - `bd compact` uses `compact_tier1_days`, `compact_tier1_dep_levels`, etc.
-- `bd init` sets `issue_prefix`
+- `bd init` sets `issue-prefix` in `config.yaml`
+- `bd migrate` migrates `issue_prefix` from database to `config.yaml` (v0.22+)
 
 External integration scripts can read configuration to sync with Jira, Linear, GitHub, etc.
 

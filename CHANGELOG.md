@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Configuration Source of Truth** (GH #209): `config.yaml` is now the single source of truth for `issue-prefix`
+  - `bd init` writes prefix to `config.yaml` instead of database
+  - Automatic migration from database → `config.yaml` on first command after upgrade
+  - `bd migrate` explicitly migrates prefix from DB to config file
+  - Eliminates config duplication between database and YAML
+  - Fixes bugs where `config.yaml` wasn't created (GH #210)
+  - Credit: Based on [feature-config-enhancements](https://github.com/rrnewton/beads/commits/feature-config-enhancements/) by @rrnewton
+
+### Migration Notes
+
+Users upgrading from pre-0.22 will see automatic migration on first command:
+- If `config.yaml` has no `issue-prefix`, it's automatically populated from the database
+- No manual action required - migration is transparent and backward compatible
+- Run `bd migrate` explicitly to see migration status message
+
 ## [0.21.5] - 2025-11-02
 
 ### Fixed
