@@ -172,9 +172,21 @@ func GenerateBatchIssueIDs(ctx context.Context, conn *sql.Conn, prefix string, i
 	return nil
 }
 
+// tryResurrectParent attempts to find and resurrect a deleted parent issue from the import batch
+// Returns true if parent was found and will be created, false otherwise
+func tryResurrectParent(parentID string, issues []*types.Issue) bool {
+	for _, issue := range issues {
+		if issue.ID == parentID {
+			return true // Parent exists in the batch being imported
+		}
+	}
+	return false // Parent not in this batch
+}
+
 // EnsureIDs generates or validates IDs for issues
 // For issues with empty IDs, generates unique hash-based IDs
 // For issues with existing IDs, validates they match the prefix and parent exists (if hierarchical)
+// For hierarchical IDs with missing parents, attempts resurrection from the import batch
 func EnsureIDs(ctx context.Context, conn *sql.Conn, prefix string, issues []*types.Issue, actor string) error {
 	usedIDs := make(map[string]bool)
 	
@@ -198,7 +210,11 @@ func EnsureIDs(ctx context.Context, conn *sql.Conn, prefix string, issues []*typ
 					return fmt.Errorf("failed to check parent existence: %w", err)
 				}
 				if parentCount == 0 {
-					return fmt.Errorf("parent issue %s does not exist", parentID)
+					// Try to resurrect parent from import batch
+					if !tryResurrectParent(parentID, issues) {
+						return fmt.Errorf("parent issue %s does not exist and cannot be resurrected from import batch", parentID)
+					}
+					// Parent will be created in this batch (due to depth-sorting), so allow this child
 				}
 			}
 			

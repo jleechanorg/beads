@@ -538,11 +538,32 @@ func upsertIssues(ctx context.Context, sqliteStore *sqlite.SQLiteStorage, issues
 	}
 
 	// Batch create all new issues
+	// Sort by hierarchy depth to ensure parents are created before children
 	if len(newIssues) > 0 {
-		if err := sqliteStore.CreateIssues(ctx, newIssues, "import"); err != nil {
-			return fmt.Errorf("error creating issues: %w", err)
+		sort.Slice(newIssues, func(i, j int) bool {
+			depthI := strings.Count(newIssues[i].ID, ".")
+			depthJ := strings.Count(newIssues[j].ID, ".")
+			if depthI != depthJ {
+				return depthI < depthJ // Shallower first
+			}
+			return newIssues[i].ID < newIssues[j].ID // Stable sort
+		})
+
+		// Create in batches by depth level (max depth 3)
+		for depth := 0; depth <= 3; depth++ {
+			var batchForDepth []*types.Issue
+			for _, issue := range newIssues {
+				if strings.Count(issue.ID, ".") == depth {
+					batchForDepth = append(batchForDepth, issue)
+				}
+			}
+			if len(batchForDepth) > 0 {
+				if err := sqliteStore.CreateIssues(ctx, batchForDepth, "import"); err != nil {
+					return fmt.Errorf("error creating depth-%d issues: %w", depth, err)
+				}
+				result.Created += len(batchForDepth)
+			}
 		}
-		result.Created += len(newIssues)
 	}
 
 	// REMOVED (bd-c7af): Counter sync after import - no longer needed with hash IDs
